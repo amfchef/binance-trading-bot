@@ -38,8 +38,7 @@ I don't want to be responsible if you loose any $$$ in the process.
 
 ### Preview
 This is a screenshot of how my dashboard looks like:
-![Screenshot of my dashboard](images\image_trade_bot.png)
-
+![Screenshot of my dashboard](.\images\image_trade_bot.png)
 ### How to set up a server
 This video is great to learn how to deploy your application to a server.
 [How to deploy an app to your server](https://www.youtube.com/watch?v=goToXTC96Co).
