@@ -80,5 +80,5 @@ Install dependencies
 ### Create your Binance API
 [Binance API management](https://www.binance.com/en/my/settings/api-management)
 
-You will receive an API-key and API-secret number. You need to add these numbers to the `setup.py` file.
+You will receive an API-key and API-secret number. You need to add these numbers to the `config.py` file.
 
