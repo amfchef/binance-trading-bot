@@ -2,8 +2,8 @@
   "25/08 17:58:35": {
     "coinpair": "SOLUSDT",
     "interval": 60,
-    "quantity": 1,
-    "portion_size": 82,
+    "quantity": 0,
+    "portion_size": 0,
     "side": "LONG",
     "rate": 82,
     "sl_id": "No SL could be set",
