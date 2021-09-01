@@ -11,14 +11,14 @@
    </head>
    <body>
       <h1>Crypto trading bot</h1>
-
+      <img src='https://thumbs.dreamstime.com/b/crypto-currency-gold-coin-bitcoin-btc-against-background-flag-sweden-concept-new-blockchain-technology-token-146942977.jpg' />
       <h3>This website recieves a webhook from Tradingview, with a trade indicator. <br>This indicator gives signals when to enter/exit a trade</h3>
       <br><br>
 
       <h3>USDT balance: ${{usdt_balance}}</h3>
    <br>
-   
-      
+
+
       <table class="table table-sm" style="border:1px solid black;margin-left:auto;margin-right:auto;">
          <h3>Active trades</h3>
          <thead>
@@ -30,8 +30,10 @@
                <th scope="col">Interval</th>
                <th scope="col">Quantity</th>
                <th scope="col">Value $</th>
+               <th scope="col">SL ID</th>
+               <th scope="col">SL %</th>
                <th scope="col">Side</th>
-               
+
             </tr>
          </thead>
          {% for key, value in running_trades.items() %}
@@ -44,13 +46,16 @@
                <td> {{ value.interval }} </td>
                <td> {{ value.quantity }} </td>
                <td> {{ value.portion_size }} </td>
+               <td> {{ value.sl_id }} </td>
+               <td> {{ value.sl_percent }} </td>
                <td> {{ value.side }} </td>
-               
+
             </tr>
             {% endfor %}
          </tbody>
       </table>
 
+<div style="width: 20%"></div>
 <table class="table table-sm" style="border:1px solid black">
 
    <thead>
@@ -100,16 +105,16 @@
                 <th class="align-middle" scope="col"> {{ total_profit }}</th>
             </tr>
          </thead>
-      
+
 
         </table>
-      
+
       <div class="container">
          <div class="row">
             <div class="col-lg-8 col-md-10 mx-auto">
                <br>
                <h3>Enter trades manually</h3>
-               
+
                <form name="sentMessage" id="contactForm" action="{{ url_for('welcome') }}" method="post" novalidate>
                   <br>
                   <div class="control-group">
@@ -162,6 +167,6 @@
       </div>
    </body>
    <footer>
-
+      <p>Copyright {{ current_year }} Created by Jakob Johansson</p>
    </footer>
 </html>

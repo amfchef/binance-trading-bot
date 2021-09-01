@@ -29,9 +29,11 @@ def welcome():
         password = data["password"]
 
         if password == config.WEBHOOK_PASSWORD:
+            # print(data)
             calculate.append_running_trades(data["coinpair"], int(data["interval"]), float(data["quantity"]),
                                             data["portion_size"], data["side"],
                                             sl_id="manual trades, No SL could be set")
+            calculate.get_running_trades()
 
             return redirect('/')
         else:
@@ -54,6 +56,7 @@ def webhook():
         print("an exception occured - {}".format(e))
         return {"code": "error",
                 "message": "Unable to read webhook"}
+    # print(request.data)
 
     if data['password'] != config.WEBHOOK_PASSWORD:
         return {
@@ -79,7 +82,7 @@ def webhook():
                 coin_pair, portion_size)
             side = "BUY"
             order_response = calculate.order(side, quantity,
-                                             coin_pair, interval, portion_size, stop_price)
+                                             coin_pair, interval, portion_size, stop_price, sl_percent)
 
         elif signal == "ENTRY SHORT":
 
@@ -93,7 +96,7 @@ def webhook():
             print("SL ", sl_percent, "portionS ", portion_size, "Q ", quantity)
             side = "SELL"
             order_response = calculate.short_order(side, quantity,
-                                                   coin_pair, interval, portion_size, stop_price)
+                                                   coin_pair, interval, portion_size, stop_price, sl_percent)
 
     elif signal == "EXIT LONG":
         side = "SELL"

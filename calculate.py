@@ -91,7 +91,7 @@ class Calculate:
             print("an exception occured - {}".format(e))
             return 0, "No ID found"
 
-    def append_running_trades(self, coinpair, interval, quantity, portion_size, side, sl_id):
+    def append_running_trades(self, coinpair, interval, quantity, portion_size, side, sl_id, sl_percentage):
         now = datetime.now()
 
         try:
@@ -103,9 +103,10 @@ class Calculate:
                 time_now = str(now.strftime("%d/%m %H:%M:%S"))
                 coin_rate = float((self.client.get_symbol_ticker(symbol=coinpair)['price']))
                 self.rounding_quantity(coin_rate)
+                sl_percentage = round(sl_percentage * 100, 1)
                 running_orders[time_now] = {"coinpair": coinpair, "interval": interval, "quantity": quantity,
                                             "portion_size": portion_size, "side": side, "rate": coin_rate,
-                                            "sl_id": sl_id}
+                                            "sl_id": sl_id, "sl_percent": sl_percentage}
                 json.dump(running_orders, outfile, indent=2)  # dump
 
         except Exception as e:
@@ -121,7 +122,6 @@ class Calculate:
 
     def append_all_trades(self, coinpair, interval, quantity, portion_size, side, profit):
 
-        side = "LONG"
         try:
             now = datetime.now()
             with open("all_trades.json") as file:
@@ -160,7 +160,7 @@ class Calculate:
         except Exception as e:
             print("an exception occured - {}".format(e))
 
-    def order(self, side, quantity, coinpair, interval, portionsize, exit_price):
+    def order(self, side, quantity, coinpair, interval, portionsize, exit_price, sl_percentage):
         order_type = ORDER_TYPE_MARKET
         if side == "BUY":
             try:
@@ -176,7 +176,7 @@ class Calculate:
                 side = "LONG"
                 sl_id = self.set_sl(exit_price, coinpair, quantity, side)
                 self.append_running_trades(coinpair, interval, quantity, self.rounding_quantity(portionsize), side,
-                                           sl_id)
+                                           sl_id, sl_percentage)
                 return order
 
         elif side == "SELL":
@@ -285,7 +285,7 @@ class Calculate:
         except Exception as e:
             print("No SL could be set: - {}".format(e))
 
-    def short_order(self, side, quantity, coinpair, interval, portionsize, exit_price):
+    def short_order(self, side, quantity, coinpair, interval, portionsize, exit_price, sl_percent):
         order_type = ORDER_TYPE_MARKET
         if side == "SELL":
 
@@ -303,7 +303,7 @@ class Calculate:
                 sl_id = self.set_sl(exit_price, coinpair, quantity, side)
 
                 self.append_running_trades(coinpair, interval, quantity, self.rounding_quantity(portionsize), side,
-                                           sl_id)
+                                           sl_id, sl_percent)
                 self.update_current_profit()
                 return order
 
