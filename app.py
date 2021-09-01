@@ -55,10 +55,10 @@ def webhook():
         return {"code": "error",
                 "message": "Unable to read webhook"}
 
-    if data['passphrase'] != config.WEBHOOK_PASSWORD:
+    if data['password'] != config.WEBHOOK_PASSWORD:
         return {
             "code": "error",
-            "message": "Nice try, invalid passphrase"
+            "message": "Nice try, invalid password"
         }
 
     interval = data['interval']
