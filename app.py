@@ -84,7 +84,7 @@ def webhook():
             quantity = calculate.convert_portion_size_to_quantity(
                 coin_pair, portion_size)
             side = "BUY"
-            order_response = calculate.order(side, quantity,
+            order_response = calculate.long_order(side, quantity,
                                              coin_pair, interval, portion_size, stop_price, sl_percent)
 
         elif signal == "ENTRY SHORT":
