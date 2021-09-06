@@ -10,13 +10,14 @@ class Calculate:
         self.RISK_FACTOR = 0.01
         self.client = Client(config.API_KEY, config.API_SECRET)
 
+        # Calculate portion size, depends RISK_FACTOR(default=1% of own balance)
     def portion_size(self, account_balance, stop_limit_percentage):
         risk_amount = account_balance * self.RISK_FACTOR
         portion_size = risk_amount / stop_limit_percentage
         return self.rounding_quantity(portion_size)
 
+        # Rounding quantity, because we need the exact decimals to make a trade
     def rounding_quantity(self, quantity):
-
         if quantity > 1000:
             return round(quantity, 0)
         elif quantity > 100:
@@ -30,16 +31,17 @@ class Calculate:
         else:
             return round(quantity, 4)
 
+        # converting portion size to quantity, of the current rate of coin
     def convert_portion_size_to_quantity(self, coin_pair, portion_size):
         try:
-
             coin_rate = float((self.client.get_symbol_ticker(symbol=coin_pair)['price']))
             quantity = portion_size / coin_rate
             return self.rounding_quantity(quantity)
 
         except Exception as e:
             print("an exception occured - {}".format(e))
-
+            
+        # updating the current profit of each trade from running_trade.json to the dashboard
     def update_current_profit(self):
         current_profit = 0
         running_trades = self.get_running_trades()
@@ -60,19 +62,22 @@ class Calculate:
 
         except Exception as e:
             print("an exception occured - {}".format(e))
-
-    def get_asset_USDT(self):
+            
+        # This is not used at the moment (still in DEV)
+        # Returns total asset of a specific coin
+    def get_asset(self, coin_pair):
         try:
             _len = len(self.client.get_margin_account()["userAssets"])
             for x in range(_len):
-                if self.client.get_margin_account()["userAssets"][x]["asset"] == "USDT":
-                    balance_USDT = self.client.get_margin_account()["userAssets"][x]["free"]
-                    return balance_USDT
+                if self.client.get_margin_account()["userAssets"]["asset"] == coinpair:
+                    balance = self.client.get_margin_account()["userAssets"]["asset]["free"]
+                    return balance
         except Exception as e:
             print("an exception occured - {}".format(e))
+            return 0
 
-        return 0
-
+        # Find the quantity the bot entried for, in the correct interval
+        # Looping through all running_trades.json returns an ID and quantity from the coinpair and interval
     def finding_quantity_and_ID_from_running_trades_rec(find_coin, find_interval):
         print(find_coin, find_interval)
         found_quantity = 0
@@ -92,13 +97,12 @@ class Calculate:
         except Exception as e:
             print("an exception occured - {}".format(e))
             return 0, "No ID found"
-
+        
+        # Append a trade to running_trades.json 
     def append_running_trades(self, coinpair, interval, quantity, portion_size, side, sl_id, sl_percentage):
         now = datetime.now()
-
         try:
             with open("running_trades.json") as file:
-
                 running_orders = json.load(file)
 
             with open("running_trades.json", "w") as outfile:
@@ -114,16 +118,16 @@ class Calculate:
         except Exception as e:
             print("an exception occured - {}".format(e))
 
+        # returns the running_trades.json as a dict
     def get_running_trades(self):
         try:
-
             with open("running_trades.json") as file:
                 return json.load(file)
         except Exception as e:
             print("an exception occured - {}".format(e))
 
+        # Appending an exit trade to all_trades.json                                                                 
     def append_all_trades(self, coinpair, interval, quantity, portion_size, side, profit):
-
         try:
             now = datetime.now()
             with open("all_trades.json") as file:
@@ -134,15 +138,17 @@ class Calculate:
                 all_trades[time_now] = {"coinpair": coinpair, "interval": interval, "quantity": quantity,
                                         "portion_size": portion_size, "side": side, "Profit": profit}
                 json.dump(all_trades, outfile, indent=2)
+                                                                             
         except Exception as e:
             print("an exception occured - {}".format(e))
 
+        # Returns total profit of your running_trades.json
     def get_total_profit(self):
         profit = 0
         try:
             with open("all_trades.json") as file:
                 all_trades = json.load(file)
-
+                                                                             
                 for key in all_trades:
                     for value in all_trades[key]:
                         if value == "Profit":
@@ -153,6 +159,7 @@ class Calculate:
         else:
             return profit
 
+        # Returns alltrades.json as a dict
     def get_all_trades(self):
         try:
 
@@ -162,14 +169,14 @@ class Calculate:
         except Exception as e:
             print("an exception occured - {}".format(e))
 
-    def order(self, side, quantity, coinpair, interval, portionsize, exit_price, sl_percentage):
+        # Order long
+    def long_order(self, side, quantity, coinpair, interval, portionsize, exit_price, sl_percentage):
         order_type = ORDER_TYPE_MARKET
         if side == "BUY":
             try:
                 print(f"sending order: {order_type} - {side} {quantity} {coinpair}")
                 order = self.client.create_margin_order(sideEffectType="MARGIN_BUY", symbol=coinpair, side=side,
                                                         type=ORDER_TYPE_MARKET, quantity=quantity)
-
             except Exception as e:
                 print("an exception occured - {}".format(e))
                 return False
@@ -214,6 +221,7 @@ class Calculate:
                 self.delete_running_trades(time_id)
                 return order
 
+        # Delete the column of the running_trade.json with a specific ID, this occurs when we get exit signal
     def delete_running_trades(self, time_id):
         running_trades = {}
         try:
@@ -227,16 +235,19 @@ class Calculate:
         except Exception as e:
             print("an exception occured - {}".format(e))
 
+        # Returns a current rate of a spesific coin
     def get_current_rate(self, coinpair):
         current_rate = float((self.client.get_symbol_ticker(symbol=coinpair)['price']))
         return current_rate
 
+        # Reuturns your USDT balance
     def get_usdt_balance(self):
         btc_balance = float(self.client.get_margin_account()['totalNetAssetOfBtc'])
         btc_rate = float((self.client.get_symbol_ticker(symbol="BTCUSDT")['price']))
         usdt_balance = round(btc_balance * btc_rate, 0)
         return int(usdt_balance)
 
+        # Returns total profit from running_trades.json
     def get_total_current_profit(self):
         running_trades = self.get_running_trades()
         total_current_profit = 0
