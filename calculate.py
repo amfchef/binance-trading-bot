@@ -24,9 +24,11 @@ class Calculate:
         elif quantity > 10:
             return round(quantity, 1)
         elif quantity > 1:
-            return round(quantity, 2)  # Change while not in DEV
-        else:
+            return round(quantity, 2)
+        elif quantity > 0.1:
             return round(quantity, 3)
+        else:
+            return round(quantity, 4)
 
     def convert_portion_size_to_quantity(self, coin_pair, portion_size):
         try:
