@@ -16,6 +16,7 @@ app = Flask(__name__)
 
 @app.route('/', methods=['GET', 'POST'])
 def welcome():
+    # Calculate all dashboard values
     calculate.update_current_profit()
     current_profit = calculate.get_total_current_profit()
     current_year = datetime.datetime.now().year
@@ -27,7 +28,8 @@ def welcome():
     if request.method == "POST":
         data = request.form
         password = data["password"]
-
+        
+        # Check if password is correct with config.py
         if password == config.WEBHOOK_PASSWORD:
             # print(data)
             calculate.append_running_trades(data["coinpair"], int(data["interval"]), float(data["quantity"]),
@@ -57,13 +59,14 @@ def webhook():
         return {"code": "error",
                 "message": "Unable to read webhook"}
     # print(request.data)
-
+    
+    # Check if password is correct with config.py
     if data['password'] != config.WEBHOOK_PASSWORD:
         return {
             "code": "error",
             "message": "Nice try, invalid password"
         }
-
+    # Saving webhook values to variables
     interval = data['interval']
     coin_pair = data['ticker']
     signal = data['signal']
@@ -72,8 +75,8 @@ def webhook():
         stop_price = data['stopprice']
         entry_price = data['entryprice']
         usdt_balance = calculate.get_usdt_balance()
+        
         if signal == "ENTRY LONG":
-
             sl_percent = round((1 - (stop_price / entry_price)), 4)
             portion_size = calculate.portion_size(
                 usdt_balance, sl_percent)
