@@ -3,12 +3,14 @@ from binance.enums import *
 import config
 import json
 from datetime import datetime
+import math
 
 
 class Calculate:
     def __init__(self):
         self.RISK_FACTOR = 0.01
         self.client = Client(config.API_KEY, config.API_SECRET)
+        self.now = datetime.now()
 
         # Calculate portion size, depends RISK_FACTOR(default=1% of own balance)
     def portion_size(self, account_balance, stop_limit_percentage):
@@ -174,9 +176,13 @@ class Calculate:
         order_type = ORDER_TYPE_MARKET
         if side == "BUY":
             try:
-                print(f"sending order: {order_type} - {side} {quantity} {coinpair}")
-                order = self.client.create_margin_order(sideEffectType="MARGIN_BUY", symbol=coinpair, side=side,
-                                                        type=ORDER_TYPE_MARKET, quantity=quantity)
+                rate_steps, quantity_steps = self.get_tick_and_step_size(coinpair)
+                quantity = self.rounding_exact_quantity(quantity, quantity_steps)
+                time_now = str(self.now.strftime("%d/%m %H:%M:%S"))
+                print(f"sending order: {time_now} {coinpair} quantity: {quantity} "
+                      f"portion size: {portionsize} SL % : {sl_percentage} ")
+                order = self.client.create_margin_order(sideEffectType="MARGIN_BUY", symbol=coinpair,
+                                                        side=side, type=ORDER_TYPE_MARKET, quantity=quantity)
             except Exception as e:
                 print("an exception occured - {}".format(e))
                 return False
@@ -258,24 +264,33 @@ class Calculate:
 
     def set_sl(self, exit_sl, coinpair, quantity, side):
         if side == "LONG":
-            price = exit_sl * 0.999
-            price = self.rounding_quantity(price)
-            quantity = self.rounding_quantity(quantity * 0.999)
+            limit_price = exit_sl * 0.97
+            print("limit: ", limit_price)
+            rate_steps, quantity_steps = self.get_tick_and_step_size(coinpair)
+            print(rate_steps, quantity_steps)
+            exit_sl = self.rounding_exact_quantity(exit_sl, rate_steps)
+            limit_price = self.rounding_exact_quantity(limit_price, rate_steps)
+            print(quantity)
+            #quantity = quantity * 99.5
+            quantity = self.rounding_exact_quantity(float(quantity) * 0.97, quantity_steps)
+
+            #quantity = quantity * 0.99
             side = SIDE_SELL
         elif side == "SHORT":
-            price = exit_sl * 1.001
-            price = self.rounding_quantity(price)
-            quantity = self.rounding_quantity(quantity * 0.999)
+            limit_price = exit_sl * 1.01
+            limit_price = self.rounding_exact_quantity(limit_price, coinpair)
+            #quantity = quantity * 0.99
             side = SIDE_BUY
         try:
-            print("Sending SL order:", coinpair, side, "Q: ", quantity, "stopPrice", exit_sl)
+            print("Sending SL order:", coinpair, side, "Q: ", quantity, "Limit price: ",
+                  limit_price, "stopPrice", exit_sl)
             order = self.client.create_margin_order(
                 symbol=coinpair,
                 side=side,
                 type=ORDER_TYPE_STOP_LOSS_LIMIT,
                 timeInForce=TIME_IN_FORCE_GTC,
                 quantity=quantity,
-                price=price,
+                price=limit_price,
                 stopPrice=exit_sl
             )
         except Exception as e:
@@ -353,3 +368,22 @@ class Calculate:
                 self.delete_running_trades(time_id)
                 return order
 
+
+    def get_tick_and_step_size(self, symbol):
+        tick_size = None
+        step_size = None
+        symbol_info = self.client.get_symbol_info(symbol)
+        for filt in symbol_info['filters']:
+            if filt['filterType'] == 'PRICE_FILTER':
+                tick_size = float(filt['tickSize'])
+            if filt['filterType'] == 'LOT_SIZE':
+                step_size = float(filt['stepSize'])
+        return tick_size, step_size
+
+    def rounding_exact_quantity(self, quantity, step_size):
+        #step_size = self.get_tick_and_step_size(coinpair)
+        print("stepSize", step_size)
+        step_size = int(math.log10(1 / float(step_size)))
+        quantity = math.floor(float(quantity) * 10 ** step_size) / 10 ** step_size
+        quantity = "{:0.0{}f}".format(float(quantity), step_size)
+        return str(int(quantity)) if int(step_size) == 0 else quantity
