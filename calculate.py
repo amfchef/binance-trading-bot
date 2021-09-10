@@ -205,7 +205,7 @@ class Calculate:
             running_trades = self.get_running_trades()
             sl_id = running_trades[time_id]["sl_id"]
             self.check_is_sl_hit(coinpair, sl_id)
-            rounded_down_quantity = self.rounding_quantity(float(previous_quanities) * 0.999)
+            rounded_down_quantity = self.rounding_exact_quantity(float(previous_quanities) * 0.99)
             try:
                 print("sending order: ", order_type, side, rounded_down_quantity, coinpair)
                 order = self.client.create_margin_order(sideEffectType="AUTO_REPAY", symbol=coinpair, side=side,
@@ -259,27 +259,24 @@ class Calculate:
         total_current_profit = 0
         for time_id, values in running_trades.items():
             total_current_profit += values["current_profit"]
-            # print(values["current_profit"])
         return total_current_profit
 
+        # Set SL at given limit
     def set_sl(self, exit_sl, coinpair, quantity, side):
         if side == "LONG":
             limit_price = exit_sl * 0.97
-            print("limit: ", limit_price)
             rate_steps, quantity_steps = self.get_tick_and_step_size(coinpair)
-            print(rate_steps, quantity_steps)
             exit_sl = self.rounding_exact_quantity(exit_sl, rate_steps)
             limit_price = self.rounding_exact_quantity(limit_price, rate_steps)
-            print(quantity)
-            #quantity = quantity * 99.5
             quantity = self.rounding_exact_quantity(float(quantity) * 0.97, quantity_steps)
 
-            #quantity = quantity * 0.99
             side = SIDE_SELL
         elif side == "SHORT":
-            limit_price = exit_sl * 1.01
-            limit_price = self.rounding_exact_quantity(limit_price, coinpair)
-            #quantity = quantity * 0.99
+            limit_price = exit_sl * 1.02
+            rate_steps, quantity_steps = self.get_tick_and_step_size(coinpair)
+            exit_sl = self.rounding_exact_quantity(exit_sl, rate_steps)
+            limit_price = self.rounding_exact_quantity(limit_price, rate_steps)
+            quantity = self.rounding_exact_quantity(float(quantity) * 0.97, quantity_steps)
             side = SIDE_BUY
         try:
             print("Sending SL order:", coinpair, side, "Q: ", quantity, "Limit price: ",
@@ -368,7 +365,9 @@ class Calculate:
                 self.delete_running_trades(time_id)
                 return order
 
-
+        # Check how many decimals are allowed per coinpair, 
+        # tickSize = allowed decimals in price range
+        # stepSize = allowed decimals in quantity range
     def get_tick_and_step_size(self, symbol):
         tick_size = None
         step_size = None
@@ -380,10 +379,11 @@ class Calculate:
                 step_size = float(filt['stepSize'])
         return tick_size, step_size
 
+        # Round the quantity or price range, with the actual allowed decimals
     def rounding_exact_quantity(self, quantity, step_size):
-        #step_size = self.get_tick_and_step_size(coinpair)
         print("stepSize", step_size)
         step_size = int(math.log10(1 / float(step_size)))
         quantity = math.floor(float(quantity) * 10 ** step_size) / 10 ** step_size
         quantity = "{:0.0{}f}".format(float(quantity), step_size)
         return str(int(quantity)) if int(step_size) == 0 else quantity
+    
