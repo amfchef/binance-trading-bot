@@ -1,8 +1,5 @@
 from calculate import Calculate
-from binance.enums import *
-from binance.client import Client
 import json, config
-
 from werkzeug.utils import redirect
 from flask import Flask, request, render_template
 import datetime
@@ -83,6 +80,7 @@ def webhook():
 
             quantity = calculate.convert_portion_size_to_quantity(
                 coin_pair, portion_size)
+
             side = "BUY"
             order_response = calculate.long_order(side, quantity,
                                              coin_pair, interval, portion_size, stop_price, sl_percent)
@@ -96,6 +94,9 @@ def webhook():
             quantity = calculate.convert_portion_size_to_quantity(
                 coin_pair, portion_size)
 
+            rounding_exact_quantity = calculate.rounding_exact_quantity(quantity, coin_pair)
+            print(rounding_exact_quantity)
+
             print("SL ", sl_percent, "portionS ", portion_size, "Q ", quantity)
             side = "SELL"
             order_response = calculate.short_order(side, quantity,
@@ -105,7 +106,7 @@ def webhook():
         side = "SELL"
         quantity = 0
         portion_size = 0
-        order_response = calculate.order(side, quantity,
+        order_response = calculate.long_order(side, quantity,
                                          coin_pair, interval, portion_size, stop_price)
 
     elif signal == "EXIT SHORT":
