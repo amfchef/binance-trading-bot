@@ -25,7 +25,7 @@ def welcome():
     if request.method == "POST":
         data = request.form
         password = data["password"]
-        
+
         # Check if password is correct with config.py
         if password == config.WEBHOOK_PASSWORD:
             # print(data)
@@ -56,7 +56,7 @@ def webhook():
         return {"code": "error",
                 "message": "Unable to read webhook"}
     # print(request.data)
-    
+
     # Check if password is correct with config.py
     if data['password'] != config.WEBHOOK_PASSWORD:
         return {
@@ -72,7 +72,7 @@ def webhook():
         stop_price = data['stopprice']
         entry_price = data['entryprice']
         usdt_balance = calculate.get_usdt_balance()
-        
+
         if signal == "ENTRY LONG":
             sl_percent = round((1 - (stop_price / entry_price)), 4)
             portion_size = calculate.portion_size(
@@ -83,21 +83,15 @@ def webhook():
 
             side = "BUY"
             order_response = calculate.long_order(side, quantity,
-                                             coin_pair, interval, portion_size, stop_price, sl_percent)
+                                                  coin_pair, interval, portion_size, stop_price, sl_percent)
 
         elif signal == "ENTRY SHORT":
 
             sl_percent = round(((stop_price / entry_price) - 1), 4)
             portion_size = calculate.portion_size(
                 usdt_balance, sl_percent)
-
             quantity = calculate.convert_portion_size_to_quantity(
                 coin_pair, portion_size)
-
-            rounding_exact_quantity = calculate.rounding_exact_quantity(quantity, coin_pair)
-            print(rounding_exact_quantity)
-
-            print("SL ", sl_percent, "portionS ", portion_size, "Q ", quantity)
             side = "SELL"
             order_response = calculate.short_order(side, quantity,
                                                    coin_pair, interval, portion_size, stop_price, sl_percent)
@@ -107,14 +101,14 @@ def webhook():
         quantity = 0
         portion_size = 0
         order_response = calculate.long_order(side, quantity,
-                                         coin_pair, interval, portion_size, stop_price)
+                                              coin_pair, interval, portion_size, stop_price, sl_percentage=0)
 
     elif signal == "EXIT SHORT":
         side = "BUY"
         quantity = 0
         portion_size = 0
         order_response = calculate.short_order(side, quantity,
-                                               coin_pair, interval, portion_size, stop_price)
+                                               coin_pair, interval, portion_size, stop_price, sl_percentage=0)
     else:
         return "An error occured, can read the signal"
 
