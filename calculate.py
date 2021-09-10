@@ -69,8 +69,8 @@ class Calculate:
         try:
             _len = len(self.client.get_margin_account()["userAssets"])
             for x in range(_len):
-                if self.client.get_margin_account()["userAssets"]["asset"] == coinpair:
-                    balance = self.client.get_margin_account()["userAssets"]["asset]["free"]
+                if self.client.get_margin_account()["userAssets"]["asset"] == coin_pair:
+                    balance = self.client.get_margin_account()["userAssets"]["asset"]["free"]
                     return balance
         except Exception as e:
             print("an exception occured - {}".format(e))
