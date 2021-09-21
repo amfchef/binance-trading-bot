@@ -86,7 +86,6 @@ def webhook():
                                                   coin_pair, interval, portion_size, stop_price, sl_percent)
 
         elif signal == "ENTRY SHORT":
-
             sl_percent = round(((stop_price / entry_price) - 1), 4)
             portion_size = calculate.portion_size(
                 usdt_balance, sl_percent)
@@ -100,15 +99,17 @@ def webhook():
         side = "SELL"
         quantity = 0
         portion_size = 0
+        sl_percentage = 0
         order_response = calculate.long_order(side, quantity,
-                                              coin_pair, interval, portion_size, stop_price, sl_percentage=0)
+                                              coin_pair, interval, portion_size, stop_price, sl_percentage)
 
     elif signal == "EXIT SHORT":
         side = "BUY"
         quantity = 0
         portion_size = 0
+        sl_percentage = 0
         order_response = calculate.short_order(side, quantity,
-                                               coin_pair, interval, portion_size, stop_price, sl_percentage=0)
+                                               coin_pair, interval, portion_size, stop_price, sl_percentage)
     else:
         return "An error occured, can read the signal"
 
