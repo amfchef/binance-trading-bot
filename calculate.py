@@ -81,7 +81,6 @@ class Calculate:
         # Find the quantity the bot entried for, in the correct interval
         # Looping through all running_trades.json returns an ID and quantity from the coinpair and interval
     def finding_quantity_and_ID_from_running_trades_rec(find_coin, find_interval):
-        print(find_coin, find_interval)
         found_quantity = 0
         found_time_id = ""
         try:
@@ -89,7 +88,6 @@ class Calculate:
                 running_orders = json.load(file)
             for time_id, values in running_orders.items():
                 for key in values:
-                    print(values[key])
                     if values[key] == find_coin:
                         found_quantity = values["quantity"]
                         found_time_id = time_id
@@ -164,9 +162,7 @@ class Calculate:
         # Returns alltrades.json as a dict
     def get_all_trades(self):
         try:
-
             with open("all_trades.json") as file:
-
                 return json.load(file)
         except Exception as e:
             print("an exception occured - {}".format(e))
@@ -174,6 +170,7 @@ class Calculate:
         # Order long
     def long_order(self, side, quantity, coinpair, interval, portionsize, exit_price, sl_percentage):
         order_type = ORDER_TYPE_MARKET
+        sl_percentage *= 100
         if side == "BUY":
             try:
                 rate_steps, quantity_steps = self.get_tick_and_step_size(coinpair)
@@ -205,7 +202,9 @@ class Calculate:
             running_trades = self.get_running_trades()
             sl_id = running_trades[time_id]["sl_id"]
             self.check_is_sl_hit(coinpair, sl_id)
-            rounded_down_quantity = self.rounding_exact_quantity(float(previous_quanities) * 0.99)
+
+            rate_steps, quantity_steps = self.get_tick_and_step_size(coinpair)
+            rounded_down_quantity = self.rounding_exact_quantity(float(previous_quanities) * 0.99, quantity_steps)
             try:
                 print("sending order: ", order_type, side, rounded_down_quantity, coinpair)
                 order = self.client.create_margin_order(sideEffectType="AUTO_REPAY", symbol=coinpair, side=side,
@@ -217,7 +216,7 @@ class Calculate:
 
             else:
                 usdt_rate = float(self.client.get_symbol_ticker(symbol=coinpair)['price'])
-                exit_portion_size = self.rounding_quantity(usdt_rate * rounded_down_quantity)
+                exit_portion_size = self.rounding_quantity(float(usdt_rate) * float(rounded_down_quantity))
                 with open("running_trades.json") as file:
                     running_trades = json.load(file)
 
@@ -315,7 +314,10 @@ class Calculate:
         if side == "SELL":
 
             try:
-                print(f"sending order: SHORT - {order_type} - {side} {quantity} {coinpair}")
+                rate_steps, quantity_steps = self.get_tick_and_step_size(coinpair)
+                quantity = self.rounding_exact_quantity(quantity, quantity_steps)
+                time_now = str(self.now.strftime("%d/%m %H:%M:%S"))
+                print(f"sending order: SHORT - {time_now} - {coinpair} - {side} quantity: {quantity} SL%: {sl_percent}")
                 order = self.client.create_margin_order(sideEffectType="MARGIN_BUY",
                                                         symbol=coinpair, side=SIDE_SELL, type=ORDER_TYPE_MARKET,
                                                         quantity=quantity)
@@ -326,7 +328,6 @@ class Calculate:
             else:
                 side = "SHORT"
                 sl_id = self.set_sl(exit_price, coinpair, quantity, side)
-
                 self.append_running_trades(coinpair, interval, quantity, self.rounding_quantity(portionsize), side,
                                            sl_id, sl_percent)
                 self.update_current_profit()
@@ -334,7 +335,6 @@ class Calculate:
 
         elif side == "BUY":
             previous_quanities, time_id = Calculate.finding_quantity_and_ID_from_running_trades_rec(coinpair, interval)
-            print("Q ", previous_quanities, "ID ", time_id)
             if time_id == "No ID found":
                 print("no ID found, ID= ", time_id)
                 return False
@@ -342,7 +342,9 @@ class Calculate:
             running_trades = self.get_running_trades()
             sl_id = running_trades[time_id]["sl_id"]
             self.check_is_sl_hit(coinpair, sl_id)
-            rounded_down_quantity = self.rounding_quantity(float(previous_quanities) * 0.999)
+            rate_steps, quantity_steps = self.get_tick_and_step_size(coinpair)
+            rounded_down_quantity = self.rounding_exact_quantity(float(previous_quanities) * 0.99, quantity_steps)
+
             try:
                 print("sending order: ", order_type, side, rounded_down_quantity, coinpair)
                 order = self.client.create_margin_order(sideEffectType="AUTO_REPAY",
@@ -355,7 +357,7 @@ class Calculate:
 
             else:
                 usdt_rate = float(self.client.get_symbol_ticker(symbol=coinpair)['price'])
-                exit_portion_size = self.rounding_quantity(usdt_rate * rounded_down_quantity)
+                exit_portion_size = self.rounding_quantity(usdt_rate * float(rounded_down_quantity))
                 with open("running_trades.json") as file:
                     running_trades = json.load(file)
                 entry_portion_size = running_trades[time_id]["portion_size"]
@@ -365,7 +367,7 @@ class Calculate:
                 self.delete_running_trades(time_id)
                 return order
 
-        # Check how many decimals are allowed per coinpair, 
+        # Check how many decimals are allowed per coinpair,
         # tickSize = allowed decimals in price range
         # stepSize = allowed decimals in quantity range
     def get_tick_and_step_size(self, symbol):
@@ -381,9 +383,7 @@ class Calculate:
 
         # Round the quantity or price range, with the actual allowed decimals
     def rounding_exact_quantity(self, quantity, step_size):
-        print("stepSize", step_size)
         step_size = int(math.log10(1 / float(step_size)))
         quantity = math.floor(float(quantity) * 10 ** step_size) / 10 ** step_size
         quantity = "{:0.0{}f}".format(float(quantity), step_size)
         return str(int(quantity)) if int(step_size) == 0 else quantity
-    
