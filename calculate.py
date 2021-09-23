@@ -170,7 +170,7 @@ class Calculate:
         # Order long
     def long_order(self, side, quantity, coinpair, interval, portionsize, exit_price, sl_percentage):
         order_type = ORDER_TYPE_MARKET
-        sl_percentage *= 100
+        #sl_percentage *= 100
         if side == "BUY":
             try:
                 rate_steps, quantity_steps = self.get_tick_and_step_size(coinpair)
